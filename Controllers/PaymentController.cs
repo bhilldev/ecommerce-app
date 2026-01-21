@@ -8,7 +8,8 @@ namespace ExpensesApp.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 private readonly EcommerceDbContext _context;
-public class PaymentController : ControllerBase {
+public class PaymentController : ControllerBase 
+{
   public PaymentController(EcommerceDbContext context)
   {
       _context = context;
