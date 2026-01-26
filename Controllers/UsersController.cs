@@ -27,7 +27,7 @@ public class UsersController : ControllerBase
 
         var user = await _context.Users
             .AsNoTracking()
-            .Where(u => u.Id == id)
+            .Where(u => u.Id == id && u.IsActive)
             .Select(u => new UserDto
             {
                 Id = u.Id,
@@ -55,7 +55,7 @@ public class UsersController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        if (await _context.Users.AnyAsync(u => u.Email == dto.Email, cancellationToken))
+        if (await _context.Users.AnyAsync(u => u.Email == dto.Email && u.IsActive, cancellationToken))
         {
             _logger.LogWarning("Registration attempt with existing email: {Email}", dto.Email);
             return BadRequest("Email is already registered");
@@ -68,6 +68,7 @@ public class UsersController : ControllerBase
             FirstName = dto.FirstName,
             LastName = dto.LastName,
             PhoneNumber = dto.PhoneNumber ?? string.Empty,
+            IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -94,5 +95,28 @@ public class UsersController : ControllerBase
         };
 
         return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, userDto);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteUser(int id, CancellationToken cancellationToken = default)
+    {
+        if (id <= 0)
+            return BadRequest("Invalid user ID");
+
+        var user = await _context.Users.FindAsync(new object[] { id }, cancellationToken);
+        
+        if (user == null)
+        {
+            _logger.LogWarning("Attempted to delete non-existent user {UserId}", id);
+            return NotFound($"User with ID {id} not found");
+        }
+
+        user.IsActive = false;
+        user.UpdatedAt = DateTime.UtcNow;
+        
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("User {UserId} soft deleted (marked as inactive)", id);
+        return NoContent();
     }
 }
