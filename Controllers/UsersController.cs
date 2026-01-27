@@ -97,6 +97,48 @@ public class UsersController : ControllerBase
         return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, userDto);
     }
 
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateUser(
+        int id, 
+        UpdateUserDto dto, 
+        CancellationToken cancellationToken = default)
+    {
+        if (id <= 0)
+            return BadRequest("Invalid user ID");
+
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var user = await _context.Users.FindAsync(new object[] { id }, cancellationToken);
+        
+        if (user == null || !user.IsActive)
+        {
+            _logger.LogWarning("Attempted to update non-existent or inactive user {UserId}", id);
+            return NotFound($"User with ID {id} not found");
+        }
+
+        user.FirstName = dto.FirstName;
+        user.LastName = dto.LastName;
+        user.PhoneNumber = dto.PhoneNumber ?? string.Empty;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Updated user {UserId}", id);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!await UserExistsAsync(id, cancellationToken))
+            {
+                return NotFound();
+            }
+            throw;
+        }
+
+        return NoContent();
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUser(int id, CancellationToken cancellationToken = default)
     {
@@ -118,5 +160,10 @@ public class UsersController : ControllerBase
 
         _logger.LogInformation("User {UserId} soft deleted (marked as inactive)", id);
         return NoContent();
+    }
+
+    private async Task<bool> UserExistsAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users.AnyAsync(u => u.Id == id && u.IsActive, cancellationToken);
     }
 }
