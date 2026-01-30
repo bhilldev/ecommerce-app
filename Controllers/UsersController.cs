@@ -19,6 +19,7 @@ public class UsersController : ControllerBase
         _logger = logger;
     }
 
+    [Authorize]
     [HttpGet("{id}")]
     public async Task<ActionResult<UserDto>> GetUserById(int id, CancellationToken cancellationToken = default)
     {
@@ -96,7 +97,7 @@ public class UsersController : ControllerBase
 
         return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, userDto);
     }
-
+    [Authorize]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateUser(
         int id, 
@@ -139,6 +140,7 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
+    [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUser(int id, CancellationToken cancellationToken = default)
     {

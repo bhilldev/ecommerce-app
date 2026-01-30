@@ -6,6 +6,7 @@ using MyEcommerceApp.DTOs;
 
 namespace MyEcommerceApp.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class OrdersController : ControllerBase 
