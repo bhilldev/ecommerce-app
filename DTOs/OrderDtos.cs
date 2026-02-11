@@ -1,3 +1,4 @@
+using MyEcommerceApp.Models;
 namespace MyEcommerceApp.DTOs;
 
 public class CreateOrderDto
